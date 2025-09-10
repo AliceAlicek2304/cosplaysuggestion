@@ -17,14 +17,13 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.annotation.PostConstruct;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-
-import jakarta.annotation.PostConstruct;
 
 /**
  * Universal file storage service supporting both local and S3 storage
@@ -217,13 +216,43 @@ public class FileStorageService {
         try {
             String s3Key = "avatars/" + fileName;
             
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(s3BucketName)
-                    .key(s3Key)
-                    .contentType(file.getContentType())
-                    .build();
+            long size = file.getSize();
+            PutObjectRequest putObjectRequest;
+            RequestBody requestBody;
+            Path tempFile = null;
+            if (size > 0) {
+                putObjectRequest = PutObjectRequest.builder()
+                        .bucket(s3BucketName)
+                        .key(s3Key)
+                        .contentType(file.getContentType())
+                        .contentLength(size)
+                        .build();
+                requestBody = RequestBody.fromInputStream(file.getInputStream(), size);
+            } else {
+                // Use temp file if size unknown
+                Path tempDir = Paths.get(System.getProperty("java.io.tmpdir", "/tmp"));
+                tempFile = Files.createTempFile(tempDir, "avatar", ".tmp");
+                Files.copy(file.getInputStream(), tempFile, StandardCopyOption.REPLACE_EXISTING);
+                long actualSize = Files.size(tempFile);
+                putObjectRequest = PutObjectRequest.builder()
+                        .bucket(s3BucketName)
+                        .key(s3Key)
+                        .contentType(file.getContentType())
+                        .contentLength(actualSize)
+                        .build();
+                requestBody = RequestBody.fromFile(tempFile);
+            }
 
-            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+            s3Client.putObject(putObjectRequest, requestBody);
+
+            // Delete temp file after upload
+            if (tempFile != null) {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (IOException e) {
+                    log.warn("Failed to delete temp file: {}", tempFile, e);
+                }
+            }
             
             String fileUrl = getS3FileUrl(s3Key);
             log.debug("Avatar uploaded to S3: {}", fileUrl);

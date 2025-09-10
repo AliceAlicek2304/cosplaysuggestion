@@ -4,6 +4,9 @@ FROM openjdk:24-jdk-slim
 # Set working directory
 WORKDIR /app
 
+# Create tmp directory
+RUN mkdir -p /app/tmp
+
 # Copy Maven wrapper and pom.xml first (for better caching)
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
@@ -20,5 +23,5 @@ RUN ./mvnw clean package -DskipTests
 # Expose port
 EXPOSE 8080
 
-# Run the application
-CMD ["java", "-jar", "-Dspring.profiles.active=aws", "target/cosplaysuggestion-0.0.1-SNAPSHOT.jar"]
+# Run the application with tmpdir
+CMD ["java", "-jar", "-Djava.io.tmpdir=/app/tmp", "-Dspring.profiles.active=aws", "target/cosplaysuggestion-0.0.1-SNAPSHOT.jar"]

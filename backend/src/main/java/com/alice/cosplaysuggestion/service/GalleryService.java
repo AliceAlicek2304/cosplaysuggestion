@@ -198,7 +198,31 @@ public class GalleryService {
 
             PutObjectRequest putObjectRequest = builder.build();
 
-            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, contentLength > 0 ? contentLength : -1L));
+            RequestBody requestBody;
+            Path tempFile = null;
+            if (contentLength > 0) {
+                requestBody = RequestBody.fromInputStream(inputStream, contentLength);
+            } else {
+                // Use temp file if size unknown to avoid OutOfMemory
+                Path tempDir = Paths.get(System.getProperty("java.io.tmpdir", "/tmp"));
+                tempFile = Files.createTempFile(tempDir, "upload", ".tmp");
+                Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
+                long actualContentLength = Files.size(tempFile);
+                builder.contentLength(actualContentLength);
+                putObjectRequest = builder.build();
+                requestBody = RequestBody.fromFile(tempFile);
+            }
+
+            s3Client.putObject(putObjectRequest, requestBody);
+
+            // Delete temp file after upload
+            if (tempFile != null) {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (IOException e) {
+                    log.warn("Failed to delete temp file: {}", tempFile, e);
+                }
+            }
 
             log.debug("Gallery file uploaded to S3: {}", s3Key);
 
