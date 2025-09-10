@@ -70,8 +70,20 @@ public class GalleryController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> uploadZip(@RequestParam("file") MultipartFile file, @RequestParam(value = "displayName", required = false) String displayName, @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail) {
         try {
+            // Log file information for debugging
+            System.out.println("Upload request received:");
+            System.out.println("File name: " + file.getOriginalFilename());
+            System.out.println("File size: " + file.getSize());
+            System.out.println("Content type: " + file.getContentType());
+            System.out.println("Display name: " + displayName);
+            if (thumbnail != null) {
+                System.out.println("Thumbnail size: " + thumbnail.getSize());
+            }
+            
             return ResponseEntity.ok(ApiResponse.success("Tải lên thành công", galleryService.uploadZip(file, displayName, thumbnail)));
         } catch (Exception e) {
+            System.err.println("Upload error: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(ApiResponse.error("Upload thất bại: " + e.getMessage()));
         }
     }
