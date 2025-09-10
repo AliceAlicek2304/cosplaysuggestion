@@ -267,7 +267,7 @@ public class CosplaySuggestionService {
             (Giải thích lý do gợi ý mỗi nhân vật)
             
             [TAOBAO_KEYWORDS]
-            Bắt buộc phải tạo 5-7 từ khóa tiếng Trung chính xác cho nhân vật này trên Taobao, mỗi từ khóa một dòng, và các từ khoá này là các từ khoá kết hợp tên nhân vật với cosplay,trang phục,tóc,phụ kiện,...
+            Bắt buộc phải tạo 5-7 từ khóa tiếng Trung chính xác cho nhân vật này trên Taobao, mỗi từ khóa một dòng, và các từ khoá này là các từ khoá kết hợp tên nhân vật với cosplay,trang phục cosplay,tóc cosplay ,phụ kiện cosplay,...
             Chú ý: Phải đảm bảo tất cả từ khóa đều liên quan đến ĐÚNG nhân vật được yêu cầu, không được nhầm lẫn với nhân vật khác.
             
             **QUAN TRỌNG: Phải bao gồm đầy đủ TẤT CẢ 8 sections trên: [CHARACTER_DESCRIPTION], [DIFFICULTY_LEVEL], [SUITABILITY_SCORE], [BUDGET_ANALYSIS], [RECOMMENDATIONS], [ITEMS_LIST], [TIPS], [ALTERNATIVES], và [TAOBAO_KEYWORDS]. Không được bỏ sót section nào!**

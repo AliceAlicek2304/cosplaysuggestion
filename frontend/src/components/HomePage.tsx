@@ -255,7 +255,7 @@ const HomePage: React.FC = () => {
                       onChange={handleInputChange}
                       className={styles.mainSearchInput}
                       required
-                    />
+                    />  
                     <Button 
                       type="submit" 
                       className={styles.searchButton}
