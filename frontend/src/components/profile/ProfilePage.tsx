@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Nav, Card, Form, Button, Alert, Badge } from 'react-bootstrap';
+import { Container, Row, Col, Nav, Card, Form, Button, Alert, Badge, Table, Modal } from 'react-bootstrap';
 import { useAuth } from '../../contexts/AuthContext';
 import { authService } from '../../services/api.service';
-import { getAvatarUrl, getBackgroundUrl } from '../../utils/helpers';
+import { galleryService } from '../../services/gallery.service';
+import { getAvatarUrl, getBackgroundUrl, getGalleryItemUrl } from '../../utils/helpers';
 import { toast } from '../../utils/toast.utils';
 import styles from './ProfilePage.module.css';
+import { GalleryItem } from '../../types/gallery.types';
+
 
 interface UpdateProfileData {
   fullName: string;
@@ -33,6 +36,7 @@ const ProfilePage: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [currentBg, setCurrentBg] = useState(1);
+  const [zoomImage, setZoomImage] = useState<string | null>(null);
 
   // Change background every 45 seconds (slower than homepage)
   useEffect(() => {
@@ -75,19 +79,113 @@ const ProfilePage: React.FC = () => {
   // Avatar upload state
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
+  // Gallery state
+  const [gallery, setGallery] = useState<GalleryItem[]>([]);
+  const [editFolderModal, setEditFolderModal] = useState<{ open: boolean; folder: GalleryItem | null }>({ open: false, folder: null });
+  const [folderItems, setFolderItems] = useState<any[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
+  const [itemActionLoading, setItemActionLoading] = useState(false);
+  const [addItemFile, setAddItemFile] = useState<File | null>(null);
+  const [addItemType, setAddItemType] = useState<'IMAGE' | 'VIDEO'>('IMAGE');
+  const [addItemError, setAddItemError] = useState('');
+  // Lấy danh sách item của folder
+  const fetchFolderItems = async (folderId: number) => {
+    setLoadingItems(true);
+    try {
+      const response = await galleryService.getFolderItems(folderId);
+      setFolderItems(response);
+    } catch {
+      setFolderItems([]);
+    } finally {
+      setLoadingItems(false);
+    }
+  };
+
+  // Xử lý mở modal chỉnh sửa folder
+  const handleOpenEditFolder = (folder: GalleryItem) => {
+    setEditFolderModal({ open: true, folder });
+    fetchFolderItems(folder.id);
+  };
+
+  // Đóng modal chỉnh sửa folder
+  const handleCloseEditFolder = () => {
+    setEditFolderModal({ open: false, folder: null });
+    setFolderItems([]);
+    setAddItemFile(null);
+    setAddItemError('');
+  };
+
+  // Xoá item
+  const handleDeleteItem = async (itemId: number) => {
+    setItemActionLoading(true);
+    try {
+      await galleryService.deleteItem(itemId);
+      if (editFolderModal.folder) fetchFolderItems(editFolderModal.folder.id);
+    } catch {}
+    setItemActionLoading(false);
+  };
+
+  // Đổi trạng thái item
+  const handleSetItemActiveStatus = async (itemId: number, active: boolean) => {
+    setItemActionLoading(true);
+    try {
+      await galleryService.setItemActiveStatus(itemId, active);
+      if (editFolderModal.folder) fetchFolderItems(editFolderModal.folder.id);
+    } catch {}
+    setItemActionLoading(false);
+  };
+
+  // Thêm item mới
+  const handleAddItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addItemFile || !editFolderModal.folder) {
+      setAddItemError('Vui lòng chọn file');
+      return;
+    }
+    setItemActionLoading(true);
+    setAddItemError('');
+    try {
+      await galleryService.addItemToFolder(editFolderModal.folder.id, addItemFile, addItemType);
+      setAddItemFile(null);
+      if (editFolderModal.folder) fetchFolderItems(editFolderModal.folder.id);
+    } catch {
+      setAddItemError('Lỗi khi thêm item');
+    }
+    setItemActionLoading(false);
+  };
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const [galleryError, setGalleryError] = useState('');
+  const [gallerySuccess, setGallerySuccess] = useState('');
+  const [galleryName, setGalleryName] = useState('');
+  const [galleryZipFile, setGalleryZipFile] = useState<File | null>(null);
+  const [galleryThumbnail, setGalleryThumbnail] = useState<File | null>(null);
+
   useEffect(() => {
     if (user) {
       setProfileData({
         fullName: user.fullName || '',
         email: user.email || '',
-        // Use birthDay field from backend
         birthday: (user as any).birthDay || '',
         gender: user.gender || '',
         height: user.height ? user.height.toString() : '',
         weight: user.weight ? user.weight.toString() : ''
       });
     }
+    // Luôn lấy tất cả folder (cả active/inactive)
+    if (user?.role === 'ADMIN') fetchGalleryAll();
   }, [user]);
+
+  // Hàm lấy tất cả folder (cả active/inactive)
+  const fetchGalleryAll = async () => {
+    try {
+      // Gọi API /api/gallery (trả về tất cả folder)
+      const response = await galleryService.getAllFoldersRaw?.();
+      setGallery(response ?? []);
+    } catch {
+      setGalleryError('Không thể tải danh sách gallery');
+    }
+  };
 
   const handleProfileInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -299,6 +397,47 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleGalleryUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!galleryZipFile || !galleryThumbnail || !galleryName) {
+      setGalleryError('Vui lòng nhập đầy đủ thông tin');
+      return;
+    }
+    setGalleryUploading(true);
+    setGalleryError('');
+    setGallerySuccess('');
+    try {
+      await galleryService.upload(galleryZipFile, galleryThumbnail, galleryName);
+      setGallerySuccess('Tải lên thành công!');
+      setShowGalleryModal(false);
+  fetchGalleryAll();
+      setGalleryName(''); setGalleryZipFile(null); setGalleryThumbnail(null);
+    } catch {
+      setGalleryError('Lỗi khi tải lên gallery');
+    } finally {
+      setGalleryUploading(false);
+    }
+  };
+
+  const handleGalleryDelete = async (id: number) => {
+    if (!window.confirm('Bạn có chắc muốn xoá gallery này?')) return;
+    try {
+      await galleryService.delete(id);
+  fetchGalleryAll();
+    } catch {
+      setGalleryError('Lỗi khi xoá gallery');
+    }
+  };
+
+  const handleGallerySetActiveStatus = async (id: number, active: boolean) => {
+    try {
+      await galleryService.setActiveStatus(id, active);
+      fetchGalleryAll();
+    } catch {
+      setGalleryError('Lỗi khi chuyển trạng thái gallery');
+    }
+  };
+
   // Generate floating particles for profile page
   const generateParticles = () => {
     const particles = [];
@@ -393,10 +532,20 @@ const ProfilePage: React.FC = () => {
                   Bảo mật
                 </Nav.Link>
               </Nav.Item>
+              {user?.role === 'ADMIN' && (
+                <Nav.Item>
+                  <Nav.Link 
+                    className={`${styles.navLink} ${activeTab === 'gallery' ? styles.active : ''}`}
+                    onClick={() => setActiveTab('gallery')}
+                  >
+                    <i className="fas fa-images me-2"></i>
+                    Gallery
+                  </Nav.Link>
+                </Nav.Item>
+              )}
             </Nav>
           </Card>
         </Col>
-
         <Col lg={9}>
           <Card className={styles.contentCard}>
             <Card.Header className={styles.contentHeader}>
@@ -406,15 +555,19 @@ const ProfilePage: React.FC = () => {
                     <i className="fas fa-user me-2"></i>
                     Thông tin cá nhân
                   </>
-                ) : (
+                ) : activeTab === 'security' ? (
                   <>
                     <i className="fas fa-shield-alt me-2"></i>
                     Bảo mật tài khoản
                   </>
+                ) : (
+                  <>
+                    <i className="fas fa-images me-2"></i>
+                    Quản lý Gallery
+                  </>
                 )}
               </h4>
             </Card.Header>
-
             <Card.Body className={styles.contentBody}>
               {error && (
                 <Alert variant="danger" className="mb-3">
@@ -761,11 +914,219 @@ const ProfilePage: React.FC = () => {
                   </div>
                 </>
               )}
+
+              {activeTab === 'gallery' && user?.role === 'ADMIN' && (
+                <>
+                  {galleryError && <Alert variant="danger">{galleryError}</Alert>}
+                  {gallerySuccess && <Alert variant="success">{gallerySuccess}</Alert>}
+                  <Button variant="primary" onClick={() => setShowGalleryModal(true)} className="mb-3">
+                    Tải lên Gallery mới
+                  </Button>
+                  <Table striped bordered hover>
+                    <thead>
+                      <tr>
+                        <th>Thumbnail</th>
+                        <th>Tên</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày tạo</th>
+                        <th>Hành động</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {gallery.map(item => (
+                        <tr key={item.id}>
+                          <td>
+                            <img
+                              src={getGalleryItemUrl(item.thumbnailUrl)}
+                              alt="thumb"
+                              style={{ width: 60, height: 60, objectFit: 'cover', cursor: 'pointer' }}
+                              onClick={e => {
+                                e.stopPropagation();
+                                setZoomImage(getGalleryItemUrl(item.thumbnailUrl));
+                              }}
+                            />
+                          </td>
+                          <td>{item.displayName}</td>
+                          <td>{item.isActive ? 'ACTIVE' : 'INACTIVE'}</td>
+                          <td>{new Date(item.createdAt).toLocaleString()}</td>
+                          <td>
+                            {item.isActive ? (
+                              <Button variant="warning" size="sm" onClick={() => handleGallerySetActiveStatus(item.id, false)} className="me-2">Inactive</Button>
+                            ) : (
+                              <Button variant="success" size="sm" onClick={() => handleGallerySetActiveStatus(item.id, true)} className="me-2">Active</Button>
+                            )}
+                            <Button variant="danger" size="sm" onClick={() => handleGalleryDelete(item.id)}>Xoá</Button>
+                            <Button variant="info" size="sm" onClick={() => handleOpenEditFolder(item)} className="ms-2">Chỉnh sửa</Button>
+                          </td>
+      {/* Modal chỉnh sửa folder */}
+      <Modal show={editFolderModal.open} onHide={handleCloseEditFolder} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Chỉnh sửa Gallery: {editFolderModal.folder?.displayName}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {loadingItems ? (
+            <div>Đang tải danh sách item...</div>
+          ) : (
+            <>
+              <Table striped bordered hover>
+                <thead>
+                  <tr>
+                    <th>Ảnh/Video</th>
+                    <th>Tên file</th>
+                    <th>Loại</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày tạo</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {folderItems.map(item => (
+                    <tr key={item.id}>
+                      <td>
+                        {item.itemType === 'IMAGE' ? (
+                          <img
+                            src={getAvatarUrl(item.fileUrl)}
+                            alt={item.fileName}
+                            style={{ width: 60, height: 60, objectFit: 'cover', cursor: 'pointer' }}
+                            onClick={() => setZoomImage(getAvatarUrl(item.fileUrl))}
+                          />
+                        ) : (
+                          <span>Video</span>
+                        )}
+                      </td>
+                      <td>{item.fileName}</td>
+                      <td>{item.itemType}</td>
+                      <td>{item.isActive ? 'ACTIVE' : 'INACTIVE'}</td>
+                      <td>{new Date(item.createdAt).toLocaleString()}</td>
+                      <td>
+                        {item.isActive ? (
+                          <Button variant="warning" size="sm" disabled={itemActionLoading} onClick={() => handleSetItemActiveStatus(item.id, false)} className="me-2">Inactive</Button>
+                        ) : (
+                          <Button variant="success" size="sm" disabled={itemActionLoading} onClick={() => handleSetItemActiveStatus(item.id, true)} className="me-2">Active</Button>
+                        )}
+                        <Button variant="danger" size="sm" disabled={itemActionLoading} onClick={() => handleDeleteItem(item.id)}>Xoá</Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+              <hr />
+              <Form onSubmit={handleAddItem}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Thêm item mới</Form.Label>
+                  <Form.Control type="file" accept="image/*,video/*" onChange={e => setAddItemFile((e.target as HTMLInputElement).files?.[0] || null)} />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Loại</Form.Label>
+                  <Form.Select value={addItemType} onChange={e => setAddItemType(e.target.value as 'IMAGE' | 'VIDEO')}>
+                    <option value="IMAGE">Ảnh</option>
+                    <option value="VIDEO">Video</option>
+                  </Form.Select>
+                </Form.Group>
+                {addItemError && <Alert variant="danger">{addItemError}</Alert>}
+                <Button type="submit" variant="primary" disabled={itemActionLoading}>{itemActionLoading ? 'Đang thêm...' : 'Thêm item'}</Button>
+              </Form>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseEditFolder}>Đóng</Button>
+        </Modal.Footer>
+      </Modal>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                  <Modal show={showGalleryModal} onHide={() => setShowGalleryModal(false)}>
+                    <Modal.Header closeButton>
+                      <Modal.Title>Tải lên Gallery mới</Modal.Title>
+                    </Modal.Header>
+                    <Form onSubmit={handleGalleryUpload}>
+                      <Modal.Body>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Tên Gallery</Form.Label>
+                          <Form.Control type="text" value={galleryName} onChange={e => setGalleryName(e.target.value)} required />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                          <Form.Label>File ZIP</Form.Label>
+                          <Form.Control type="file" accept=".zip" onChange={e => setGalleryZipFile((e.target as HTMLInputElement).files?.[0] || null)} required />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Thumbnail</Form.Label>
+                          <Form.Control type="file" accept="image/*" onChange={e => setGalleryThumbnail((e.target as HTMLInputElement).files?.[0] || null)} required />
+                        </Form.Group>
+                      </Modal.Body>
+                      <Modal.Footer>
+                        <Button variant="secondary" onClick={() => setShowGalleryModal(false)}>Đóng</Button>
+                        <Button type="submit" variant="primary" disabled={galleryUploading}>{galleryUploading ? 'Đang tải lên...' : 'Tải lên'}</Button>
+                      </Modal.Footer>
+                    </Form>
+                  </Modal>
+                </>
+              )}
             </Card.Body>
           </Card>
         </Col>
       </Row>
     </Container>
+    {/* Modal phóng to ảnh - render ngoài bảng, tránh lỗi HTML */}
+    {zoomImage && (
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'auto',
+          background: 'transparent',
+        }}
+        onClick={() => setZoomImage(null)}
+      >
+        <img
+          src={zoomImage}
+          alt="Zoom"
+          style={{
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            borderRadius: 8,
+            boxShadow: '0 2px 16px rgba(0,0,0,0.12)',
+            transition: 'transform 0.25s cubic-bezier(.4,2,.3,1)',
+            transform: 'scale(1)',
+            background: '#fff',
+            padding: 8,
+            animation: 'zoomIn 0.25s cubic-bezier(.4,2,.3,1)',
+          }}
+          onClick={e => e.stopPropagation()}
+        />
+        <button
+          style={{
+            position: 'absolute',
+            top: 24,
+            right: 32,
+            background: '#fff',
+            border: 'none',
+            borderRadius: 20,
+            padding: '6px 16px',
+            fontSize: 18,
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+          }}
+          onClick={() => setZoomImage(null)}
+        >Đóng</button>
+        <style>{`
+          @keyframes zoomIn {
+            from { transform: scale(0.7); opacity: 0.5; }
+            to { transform: scale(1); opacity: 1; }
+          }
+        `}</style>
+      </div>
+    )}
     </div>
   );
 };

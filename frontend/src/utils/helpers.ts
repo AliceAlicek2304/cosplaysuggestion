@@ -43,6 +43,37 @@ export const getBackgroundUrl = (backgroundId: number | string): string => {
   }
 };
 
+export const getGalleryItemUrl = (fileUrl?: string): string => {
+  // If fileUrl is null/undefined or empty, return empty string
+  if (!fileUrl || fileUrl.trim() === '') {
+    return '';
+  }
+  
+  // If fileUrl already contains full URL (starts with http), return as is
+  if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+    return fileUrl;
+  }
+  
+  // If fileUrl starts with s3://, convert to HTTPS URL
+  if (fileUrl.startsWith('s3://')) {
+    const s3Path = fileUrl.replace('s3://cosplay-suggestion-files/', '');
+    return `${config.S3_BASE_URL}/${s3Path}`;
+  }
+  
+  // If fileUrl starts with /, it's a relative path from server root
+  if (fileUrl.startsWith('/')) {
+    return `${config.API_BASE_URL}${fileUrl}`;
+  }
+  
+  // For production with S3, assume it's a key in gallery folder
+  if (config.STORAGE_TYPE === 's3') {
+    return `${config.S3_BASE_URL}/gallery/${fileUrl}`;
+  }
+  
+  // For local development, construct the full URL
+  return `${config.API_BASE_URL}/api/gallery/${fileUrl}`;
+};
+
 export const getUserDisplayName = (user: { fullName?: string; username?: string } | null): string => {
   if (!user) return 'Guest';
   return user.fullName || user.username || 'Unknown User';

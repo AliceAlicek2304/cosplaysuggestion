@@ -105,7 +105,16 @@ const Header: React.FC = () => {
               >
                 Tìm kiếm
               </Nav.Link>
-              <Nav.Link href="#" className={styles.navLink}>Cosplay</Nav.Link>
+              <Nav.Link 
+                href="#cosplay" 
+                className={styles.navLink}
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.hash = '#cosplay';
+                }}
+              >
+                Cosplay
+              </Nav.Link>
             </Nav>
             
             <Nav>

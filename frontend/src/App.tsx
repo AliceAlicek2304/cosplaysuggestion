@@ -6,6 +6,8 @@ import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import HomePage from './components/HomePage';
 import ProfilePage from './components/profile/ProfilePage';
+import CosplayPage from './components/cosplay/CosplayPage';
+import CosplayDetailPage from './components/cosplay/CosplayDetailPage';
 import EmailVerifyPage from './components/auth/EmailVerifyPage';
 import './App.css';
 
@@ -31,9 +33,16 @@ function App() {
     switch (currentPage) {
       case 'profile':
         return <ProfilePage />;
+      case 'cosplay':
+        return <CosplayPage />;
       case 'verify-email':
         return <EmailVerifyPage />;
       default:
+        // Check if it's a cosplay detail page (cosplay/{id})
+        if (currentPage.startsWith('cosplay/')) {
+          const folderId = currentPage.split('/')[1];
+          return <CosplayDetailPage folderId={folderId} />;
+        }
         return <HomePage />;
     }
   };

@@ -5,6 +5,10 @@ import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import static org.springframework.http.HttpMethod.DELETE;
+import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.POST;
+import static org.springframework.http.HttpMethod.PUT;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -83,6 +87,8 @@ public class SecurityConfig {
                     
                     // Background images - public
                     .requestMatchers("/api/background/**").permitAll()
+                    // Gallery public GET
+                    .requestMatchers(GET, "/api/gallery/**").permitAll()
                     
                     // === COSPLAY SUGGESTION ENDPOINTS ===
                     
@@ -102,6 +108,9 @@ public class SecurityConfig {
                     
                     // Admin endpoints - require ADMIN role
                     .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                    .requestMatchers(POST, "/api/gallery/**").hasRole("ADMIN")
+                    .requestMatchers(PUT, "/api/gallery/**").hasRole("ADMIN")
+                    .requestMatchers(DELETE, "/api/gallery/**").hasRole("ADMIN")
                     
                     // === DOCUMENTATION & MONITORING ===
                     
