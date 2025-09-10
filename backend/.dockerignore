@@ -1,0 +1,43 @@
+# Build artifacts
+target/
+*.jar
+*.war
+*.ear
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temp files
+*.tmp
+*.temp
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Local uploads (will use S3)
+uploads/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Maven wrapper jar (will be downloaded)
+.mvn/wrapper/maven-wrapper.jar

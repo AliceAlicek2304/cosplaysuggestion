@@ -1,0 +1,324 @@
+/* Footer.module.css - Anime/Cosmic theme footer styles */
+
+.footer {
+  position: relative;
+  background: linear-gradient(135deg, #000000 0%, #1a1a2e 25%, #16213e 50%, #0f0f23 100%);
+  color: white;
+  margin-top: 3rem;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(138, 43, 226, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(0, 191, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 60%, rgba(255, 105, 180, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.footerContent {
+  position: relative;
+  z-index: 2;
+  padding: 3rem 0 1rem;
+}
+
+.brandSection {
+  margin-bottom: 2rem;
+}
+
+.brandTitle {
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ff6b6b, #4ecdc4, #45b7d1);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 3s ease-in-out infinite;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.brandIcon {
+  color: #ff6b6b;
+  font-size: 1.5rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px rgba(255, 107, 107, 0.5));
+  }
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 15px rgba(255, 107, 107, 0.8));
+  }
+}
+
+.brandDescription {
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.socialLinks {
+  display: flex;
+  gap: 1rem;
+}
+
+.socialLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.socialLink:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.socialLink.facebook:hover {
+  background: linear-gradient(135deg, #3b5998, #8b9dc3);
+  border-color: #3b5998;
+}
+
+.socialLink.instagram:hover {
+  background: linear-gradient(135deg, #e1306c, #fd1d1d, #fccc63);
+  border-color: #e1306c;
+}
+
+.socialLink.twitter:hover {
+  background: linear-gradient(135deg, #1da1f2, #0e71c8);
+  border-color: #1da1f2;
+}
+
+.socialLink.discord:hover {
+  background: linear-gradient(135deg, #7289da, #5865f2);
+  border-color: #7289da;
+}
+
+.footerSection {
+  margin-bottom: 2rem;
+}
+
+.sectionTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 1rem;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.sectionTitle::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 30px;
+  height: 2px;
+  background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+  border-radius: 1px;
+}
+
+.linkList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.linkItem {
+  margin-bottom: 0.5rem;
+}
+
+.footerLink {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  position: relative;
+  padding-left: 1rem;
+}
+
+.footerLink::before {
+  content: '▶';
+  position: absolute;
+  left: 0;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+}
+
+.footerLink:hover {
+  color: white;
+  padding-left: 1.2rem;
+}
+
+.footerLink:hover::before {
+  color: #4ecdc4;
+  transform: translateX(2px);
+}
+
+.contactInfo {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.contactItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.8rem;
+  transition: all 0.3s ease;
+  padding: 0.3rem;
+  border-radius: 5px;
+}
+
+.contactItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.contactIcon {
+  width: 20px;
+  color: #4ecdc4;
+  margin-right: 0.8rem;
+}
+
+.divider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  margin: 2rem 0;
+}
+
+.bottomSection {
+  padding: 1rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.copyright {
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.credits {
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.heartIcon {
+  color: #ff6b6b;
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Floating particles for footer */
+.footerParticles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.footerParticle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  animation: floatUp 8s linear infinite;
+}
+
+.footerParticle:nth-child(odd) {
+  background: rgba(138, 43, 226, 0.4);
+  animation-delay: -2s;
+}
+
+.footerParticle:nth-child(3n) {
+  background: rgba(0, 191, 255, 0.4);
+  animation-delay: -4s;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .footerContent {
+    padding: 2rem 0 1rem;
+  }
+  
+  .socialLinks {
+    justify-content: center;
+    margin-bottom: 2rem;
+  }
+  
+  .credits {
+    text-align: center;
+    margin-top: 1rem;
+  }
+  
+  .sectionTitle {
+    text-align: center;
+  }
+  
+  .brandTitle {
+    justify-content: center;
+  }
+}

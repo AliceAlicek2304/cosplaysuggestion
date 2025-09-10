@@ -1,0 +1,12 @@
+{
+    "CORSRules": [
+        {
+            "ID": "cosplay-suggestion-cors",
+            "AllowedHeaders": ["*"],
+            "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
+            "AllowedOrigins": ["*"],
+            "ExposeHeaders": ["ETag", "x-amz-meta-custom-header"],
+            "MaxAgeSeconds": 3600
+        }
+    ]
+}
