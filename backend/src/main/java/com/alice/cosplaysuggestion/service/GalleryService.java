@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,10 +29,13 @@ import com.alice.cosplaysuggestion.repository.GalleryFolderRepository;
 import com.alice.cosplaysuggestion.repository.GalleryItemRepository;
 
 import jakarta.annotation.PostConstruct;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
@@ -395,6 +399,38 @@ public class GalleryService {
             Path target = galleryRoot.resolve(storageName).resolve(subDir).resolve(fileName);
             Files.deleteIfExists(target);
         }
+    }
+
+    /**
+     * Download folder as ZIP
+     */
+    public Path downloadZip(Long folderId) throws IOException {
+        GalleryFolder folder = folderRepo.findById(folderId).orElseThrow(() -> new IOException("Folder not found"));
+        List<GalleryItem> items = itemRepo.findByFolder(folder);
+
+        Path tempDir = Paths.get(System.getProperty("java.io.tmpdir", "/tmp"));
+        Path zipFile = Files.createTempFile(tempDir, "download", ".zip");
+
+        try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipFile))) {
+            for (GalleryItem item : items) {
+                String key = "gallery/" + folder.getStorageName() + "/" + item.getSubDir() + "/" + item.getFileName();
+                try {
+                    GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                            .bucket(s3BucketName)
+                            .key(key)
+                            .build();
+                    ResponseInputStream<GetObjectResponse> s3Object = s3Client.getObject(getObjectRequest);
+                    ZipEntry zipEntry = new ZipEntry(item.getSubDir() + "/" + item.getFileName());
+                    zos.putNextEntry(zipEntry);
+                    s3Object.transferTo(zos);
+                    zos.closeEntry();
+                } catch (Exception e) {
+                    log.error("Failed to add file to zip: {}", key, e);
+                }
+            }
+        }
+
+        return zipFile;
     }
 
     private String stripExt(String n) { int i = n.lastIndexOf('.'); return i==-1?n:n.substring(0,i); }

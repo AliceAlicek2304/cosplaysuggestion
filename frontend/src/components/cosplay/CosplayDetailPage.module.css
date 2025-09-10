@@ -96,6 +96,20 @@
   color: white;
 }
 
+.downloadButton {
+  position: absolute;
+  right: 2rem;
+  top: 2rem;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.downloadButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: white;
+}
+
 .title {
   font-size: 2.5rem;
   font-weight: 700;

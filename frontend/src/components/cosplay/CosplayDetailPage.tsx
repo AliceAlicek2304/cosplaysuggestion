@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Container, Row, Col, Spinner, Alert, Button, Modal } from 'react-bootstrap';
 import { galleryService } from '../../services/gallery.service';
 import { getAvatarUrl, getBackgroundUrl, getGalleryItemUrl } from '../../utils/helpers';
 import { GalleryItem } from '../../types/gallery.types';
+import { useAuth } from '../../contexts/AuthContext';
+import LoginModal from '../auth/LoginModal';
 import styles from './CosplayDetailPage.module.css';
 
 interface GalleryItemDetail {
@@ -21,6 +23,9 @@ const CosplayDetailPage: React.FC<{ folderId: string }> = ({ folderId }) => {
   const [error, setError] = useState('');
   const [zoomImage, setZoomImage] = useState<string | null>(null);
   const [currentBg, setCurrentBg] = useState(1);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     fetchFolderDetail();
@@ -67,6 +72,38 @@ const CosplayDetailPage: React.FC<{ folderId: string }> = ({ folderId }) => {
 
   const handleBack = () => {
     window.location.hash = '#cosplay';
+  };
+
+  const handleDownload = async () => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/gallery/folders/${folderId}/download`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `folder_${folderId}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        setError('Không thể tải xuống folder');
+      }
+    } catch (err) {
+      setError('Lỗi khi tải xuống');
+    }
   };
 
   // Generate floating particles for detail page
@@ -144,6 +181,14 @@ const CosplayDetailPage: React.FC<{ folderId: string }> = ({ folderId }) => {
             Quay lại
           </Button>
           <h1 className={styles.title}>{folder.displayName}</h1>
+          <Button
+            variant="outline-light"
+            onClick={handleDownload}
+            className={styles.downloadButton}
+          >
+            <i className="fas fa-download me-2"></i>
+            Tải xuống
+          </Button>
           <div className={styles.meta}>
             <span className={styles.date}>
               <i className="fas fa-calendar me-1"></i>
@@ -250,6 +295,12 @@ const CosplayDetailPage: React.FC<{ folderId: string }> = ({ folderId }) => {
           `}</style>
         </div>
       )}
+      <LoginModal
+        show={showLoginModal}
+        onHide={() => setShowLoginModal(false)}
+        onSwitchToRegister={() => {}}
+        onSwitchToForgotPassword={() => {}}
+      />
     </div>
   );
 };

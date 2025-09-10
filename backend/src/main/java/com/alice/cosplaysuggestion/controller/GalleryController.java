@@ -100,6 +100,22 @@ public class GalleryController {
         }
     }
 
+    // Download folder as ZIP
+    @GetMapping("/folders/{id}/download")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Resource> downloadFolder(@PathVariable Long id) {
+        try {
+            Path zipFile = galleryService.downloadZip(id);
+            Resource resource = new UrlResource(zipFile.toUri());
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"folder_" + id + ".zip\"")
+                    .header(HttpHeaders.CONTENT_TYPE, "application/zip")
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
     // Admin: active/inactive folder
     @PutMapping("/folders/{id}/active")
     @PreAuthorize("hasRole('ADMIN')")
