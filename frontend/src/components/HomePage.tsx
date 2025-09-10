@@ -250,7 +250,7 @@ const HomePage: React.FC = () => {
                     <Form.Control
                       type="text"
                       name="characterName"
-                      placeholder="Nhập tên nhân vật (VD: Elaina, Nezuko, Miku...)"
+                      placeholder="Nhập tên nhân vật và tên anime (VD: Elaina Majo no Tabitabi, Nezuko, Kurumi Date a live, Miku...)"
                       value={formData.characterName}
                       onChange={handleInputChange}
                       className={styles.mainSearchInput}
