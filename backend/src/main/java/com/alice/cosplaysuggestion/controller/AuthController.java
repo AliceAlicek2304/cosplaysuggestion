@@ -27,7 +27,15 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*", maxAge = 3600)
+@CrossOrigin(
+    origins = {
+        "http://localhost:3000",
+        "https://main.d3gxp9k6k5djri.amplifyapp.com",
+        "https://cosplaysg.ddns.net"
+    },
+    allowCredentials = "true",
+    maxAge = 3600
+)
 public class AuthController {
     
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);

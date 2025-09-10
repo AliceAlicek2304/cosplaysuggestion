@@ -20,7 +20,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/background")
-@CrossOrigin(origins = "*", maxAge = 3600)
+@CrossOrigin(
+    origins = {
+        "http://localhost:3000",
+        "https://main.d3gxp9k6k5djri.amplifyapp.com",
+        "https://cosplaysg.ddns.net"
+    },
+    allowCredentials = "true",
+    maxAge = 3600
+)
 public class BackgroundController {
     
     private static final Logger logger = LoggerFactory.getLogger(BackgroundController.class);
