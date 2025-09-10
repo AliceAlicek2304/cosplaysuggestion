@@ -145,7 +145,7 @@ public class GalleryService {
                 String sub = lower.contains("/video/") || lower.startsWith("video/") ? "video" : lower.contains("/thumb/") || lower.startsWith("thumb/") ? "thumb" : "pic";
 
                 // Store file based on storage type
-                storeGalleryFile(zis, storage, sub, safe);
+                storeGalleryFile(zis, storage, sub, safe, e.getSize());
 
                 if ("thumb".equals(sub)) {
                     if (folder.getThumbnailUrl() == null || folder.getThumbnailUrl().isBlank()) {
@@ -162,7 +162,7 @@ public class GalleryService {
         // optional thumbnail
         if (thumbnail != null && !thumbnail.isEmpty()) {
             String safeThumb = ensureImageExt(sanitizeFilename(Optional.ofNullable(thumbnail.getOriginalFilename()).orElse("thumb")));
-            storeGalleryFile(thumbnail.getInputStream(), storage, "thumb", safeThumb);
+            storeGalleryFile(thumbnail.getInputStream(), storage, "thumb", safeThumb, thumbnail.getSize());
             folder.setThumbnailUrl(buildGalleryUrl(storage, "thumb", safeThumb));
         }
 
@@ -172,9 +172,9 @@ public class GalleryService {
     /**
      * Store gallery file to appropriate storage (S3 or local)
      */
-    private void storeGalleryFile(InputStream inputStream, String storage, String subDir, String fileName) throws IOException {
+    private void storeGalleryFile(InputStream inputStream, String storage, String subDir, String fileName, long contentLength) throws IOException {
         if (isS3Storage) {
-            storeGalleryFileToS3(inputStream, storage, subDir, fileName);
+            storeGalleryFileToS3(inputStream, storage, subDir, fileName, contentLength);
         } else {
             storeGalleryFileLocally(inputStream, storage, subDir, fileName);
         }
@@ -183,17 +183,22 @@ public class GalleryService {
     /**
      * Store gallery file to S3
      */
-    private void storeGalleryFileToS3(InputStream inputStream, String storage, String subDir, String fileName) throws IOException {
+    private void storeGalleryFileToS3(InputStream inputStream, String storage, String subDir, String fileName, long contentLength) throws IOException {
         try {
             String s3Key = "gallery/" + storage + "/" + subDir + "/" + fileName;
 
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+            PutObjectRequest.Builder builder = PutObjectRequest.builder()
                     .bucket(s3BucketName)
                     .key(s3Key)
-                    .contentType(getContentType(fileName))
-                    .build();
+                    .contentType(getContentType(fileName));
 
-            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, -1));
+            if (contentLength > 0) {
+                builder.contentLength(contentLength);
+            }
+
+            PutObjectRequest putObjectRequest = builder.build();
+
+            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, contentLength > 0 ? contentLength : -1L));
 
             log.debug("Gallery file uploaded to S3: {}", s3Key);
 
@@ -346,7 +351,7 @@ public class GalleryService {
         ItemType itemType = "VIDEO".equalsIgnoreCase(type) ? ItemType.VIDEO : ItemType.IMAGE;
 
         // Store file based on storage type
-        storeGalleryFile(file.getInputStream(), folder.getStorageName(), sub, safe);
+        storeGalleryFile(file.getInputStream(), folder.getStorageName(), sub, safe, file.getSize());
 
         GalleryItem item = new GalleryItem(folder, safe, sub, itemType, buildGalleryUrl(folder.getStorageName(), sub, safe));
         return itemRepo.save(item);
