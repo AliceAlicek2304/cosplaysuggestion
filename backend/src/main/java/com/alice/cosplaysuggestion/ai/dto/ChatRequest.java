@@ -8,9 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Đại diện cho request gửi đến Gemini API
- */
+// Đại diện cho request gửi đến Gemini API
 @Data
 @Builder
 @NoArgsConstructor
@@ -43,9 +41,7 @@ public class ChatRequest {
         private Integer maxOutputTokens;
     }
 
-    /**
-     * Tạo request từ câu hỏi của người dùng
-     */
+    // Tạo request từ câu hỏi của người dùng
     public static ChatRequest fromUserQuestion(String userQuestion) {
         Part part = new Part();
         part.setText(userQuestion);
@@ -71,9 +67,7 @@ public class ChatRequest {
         return request;
     }
 
-    /**
-     * Tạo request từ system prompt và câu hỏi người dùng
-     */
+    // Tạo request từ system prompt và câu hỏi người dùng
     public static ChatRequest fromSystemAndUserPrompt(String systemPrompt, String userQuestion) {
         // Chỉnh sửa để tương thích với Gemini API:
         // Thêm system prompt vào câu hỏi người dùng thay vì tạo message riêng

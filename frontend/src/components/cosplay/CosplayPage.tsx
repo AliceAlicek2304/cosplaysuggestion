@@ -10,6 +10,8 @@ const CosplayPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentBg, setCurrentBg] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     fetchFolders();
@@ -24,17 +26,36 @@ const CosplayPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const fetchFolders = async () => {
+  const fetchFolders = async (query = '') => {
     try {
       setLoading(true);
-      // Chỉ lấy folders active để hiển thị công khai
-      const response = await galleryService.getAll();
+      let response;
+      if (query.trim()) {
+        response = await galleryService.search(query);
+      } else {
+        // API đã trả về chỉ folders active
+        response = await galleryService.getAll();
+      }
       setFolders(response);
     } catch (err) {
       setError('Không thể tải danh sách cosplay');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearchSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSearching(true);
+    try {
+      await fetchFolders(searchQuery);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
   };
 
   const handleFolderClick = (folder: GalleryItem) => {
@@ -108,6 +129,69 @@ const CosplayPage: React.FC = () => {
           <p className={styles.subtitle}>
             Khám phá các bộ cosplay tuyệt đẹp từ cộng đồng
           </p>
+          
+          {/* Search Bar */}
+          <div className={styles.searchContainer}>
+            <form onSubmit={handleSearchSubmit} className="d-flex">
+              <div className="input-group">
+                <span className="input-group-text">
+                  <i className="fas fa-search"></i>
+                </span>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Tìm kiếm theo tên cosplay..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button
+                    className="btn btn-outline-secondary"
+                    type="button"
+                    onClick={handleClearSearch}
+                    title="Xóa tìm kiếm"
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                )}
+                <button
+                  className="btn btn-primary"
+                  type="submit"
+                  disabled={!searchQuery.trim() || isSearching}
+                  title="Tìm kiếm"
+                >
+                  {isSearching ? (
+                    <Spinner
+                      as="span"
+                      animation="border"
+                      size="sm"
+                      role="status"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <i className="fas fa-search"></i>
+                  )}
+                  <span className="d-none d-sm-inline ms-1">
+                    {isSearching ? 'Đang tìm...' : 'Tìm'}
+                  </span>
+                </button>
+                {searchQuery && (
+                  <button
+                    className="btn btn-outline-info"
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      fetchFolders();
+                    }}
+                    title="Hiển thị tất cả"
+                  >
+                    <i className="fas fa-list"></i>
+                    <span className="d-none d-sm-inline ms-1">Tất cả</span>
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
         </div>
 
         <Row className={styles.grid}>
@@ -149,8 +233,29 @@ const CosplayPage: React.FC = () => {
         {folders.length === 0 && (
           <div className={styles.emptyState}>
             <i className="fas fa-images fa-3x text-muted mb-3"></i>
-            <h4>Chưa có bộ cosplay nào</h4>
-            <p className="text-muted">Hãy quay lại sau khi có thêm nội dung mới!</p>
+            {searchQuery ? (
+              <>
+                <h4>Không tìm thấy kết quả</h4>
+                <p className="text-muted">
+                  Không có bộ cosplay nào phù hợp với từ khóa "{searchQuery}"
+                </p>
+                <button
+                  className="btn btn-primary mt-3"
+                  onClick={() => {
+                    setSearchQuery('');
+                    fetchFolders();
+                  }}
+                >
+                  <i className="fas fa-list me-2"></i>
+                  Hiển thị tất cả
+                </button>
+              </>
+            ) : (
+              <>
+                <h4>Chưa có bộ cosplay nào</h4>
+                <p className="text-muted">Hãy quay lại sau khi có thêm nội dung mới!</p>
+              </>
+            )}
           </div>
         )}
       </Container>

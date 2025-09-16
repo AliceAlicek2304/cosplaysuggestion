@@ -35,9 +35,7 @@ public class CosplaySuggestionService {
     @Autowired
     private TaobaoService taobaoService;
 
-    /**
-     * Tạo gợi ý cosplay cho người dùng đã đăng nhập
-     */
+    // Tạo gợi ý cosplay cho người dùng đã đăng nhập
     public ApiResponse<CosplaySuggestionResponse> generateSuggestionForUser(
             Long userId, CosplaySuggestionRequest request) {
         
@@ -63,9 +61,7 @@ public class CosplaySuggestionService {
         }
     }
 
-    /**
-     * Tạo gợi ý cosplay cho người dùng chưa đăng nhập
-     */
+    // Tạo gợi ý cosplay cho người dùng chưa đăng nhập
     public ApiResponse<CosplaySuggestionResponse> generateSuggestionForGuest(CosplaySuggestionRequest request) {
         try {
             // Kiểm tra thông tin bắt buộc
@@ -82,9 +78,7 @@ public class CosplaySuggestionService {
         }
     }
 
-    /**
-     * Logic chính tạo gợi ý cosplay
-     */
+    // Logic chính tạo gợi ý cosplay
     private ApiResponse<CosplaySuggestionResponse> generateSuggestion(
             CosplaySuggestionRequest request, Double height, Double weight, String gender) {
 
@@ -133,9 +127,7 @@ public class CosplaySuggestionService {
         }
     }
 
-    /**
-     * Convert Taobao product to response format
-     */
+    // Convert Taobao product to response format
     private CosplaySuggestionResponse.CosplayProduct convertTaobaoProduct(TaobaoSearchResponse.TaobaoProduct taobaoProduct) {
         CosplaySuggestionResponse.CosplayProduct product = new CosplaySuggestionResponse.CosplayProduct();
         product.setId(taobaoProduct.getId());
@@ -154,9 +146,7 @@ public class CosplaySuggestionService {
         return product;
     }
 
-    /**
-     * Tạo prompt chi tiết cho AI
-     */
+    // Tạo prompt chi tiết cho AI
     private String buildCosplayPrompt(CosplaySuggestionRequest request, Double height, Double weight, String gender) {
         StringBuilder prompt = new StringBuilder();
         
@@ -189,9 +179,7 @@ public class CosplaySuggestionService {
         return prompt.toString();
     }
 
-    /**
-     * System prompt cho AI
-     */
+    // System prompt cho AI
     private String getCosplaySystemPrompt() {
         return """
             Bạn là một chuyên gia cosplay chuyên nghiệp với kiến thức sâu rộng về anime, manga, game và văn hóa otaku. 
@@ -277,9 +265,7 @@ public class CosplaySuggestionService {
             """;
     }
 
-    /**
-     * Parse response từ AI thành structured data
-     */
+    // Parse response từ AI thành structured data
     private CosplaySuggestionResponse parseAIResponse(String aiText, String characterName, long processingTime) {
         CosplaySuggestionResponse response = new CosplaySuggestionResponse();
         response.setCharacterName(characterName);
@@ -312,9 +298,7 @@ public class CosplaySuggestionService {
         return response;
     }
 
-    /**
-     * Extract section từ AI response
-     */
+    // Extract section từ AI response
     private String extractSection(String text, String sectionName) {
         try {
             String startTag = "[" + sectionName + "]";
@@ -339,9 +323,7 @@ public class CosplaySuggestionService {
         }
     }
 
-    /**
-     * Extract score và chỉ lấy số, loại bỏ mô tả
-     */
+    // Extract score và chỉ lấy số, loại bỏ mô tả
     private String extractAndCleanScore(String text, String sectionName) {
         try {
             String rawScore = extractSection(text, sectionName);
@@ -363,9 +345,7 @@ public class CosplaySuggestionService {
         }
     }
 
-    /**
-     * Extract danh sách từ khóa Taobao từ AI response
-     */
+    // Extract danh sách từ khóa Taobao từ AI response
     private List<String> extractTaobaoKeywords(String text) {
         try {
             String keywordsSection = extractSection(text, "TAOBAO_KEYWORDS");

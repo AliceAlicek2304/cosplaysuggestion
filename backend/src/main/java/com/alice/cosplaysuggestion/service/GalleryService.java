@@ -119,6 +119,11 @@ public class GalleryService {
         return folderRepo.findAll();
     }
 
+    // Trả về chỉ folder active
+    public List<GalleryFolder> listActiveFolders() {
+        return folderRepo.findByIsActiveTrue();
+    }
+
     // Trả về tất cả item trong folder (không lọc isActive)
     public List<GalleryItem> listAllItems(Long folderId) {
         GalleryFolder f = folderRepo.findById(folderId).orElseThrow();
@@ -173,9 +178,7 @@ public class GalleryService {
         return folderRepo.save(folder);
     }
 
-    /**
-     * Store gallery file to appropriate storage (S3 or local)
-     */
+    // Store gallery file to appropriate storage (S3 or local)
     private void storeGalleryFile(InputStream inputStream, String storage, String subDir, String fileName, long contentLength) throws IOException {
         if (isS3Storage) {
             storeGalleryFileToS3(inputStream, storage, subDir, fileName, contentLength);
@@ -184,9 +187,7 @@ public class GalleryService {
         }
     }
 
-    /**
-     * Store gallery file to S3
-     */
+    // Store gallery file to S3
     private void storeGalleryFileToS3(InputStream inputStream, String storage, String subDir, String fileName, long contentLength) throws IOException {
         try {
             String s3Key = "gallery/" + storage + "/" + subDir + "/" + fileName;
@@ -239,9 +240,7 @@ public class GalleryService {
         }
     }
 
-    /**
-     * Store gallery file locally
-     */
+    // Store gallery file locally
     private void storeGalleryFileLocally(InputStream inputStream, String storage, String subDir, String fileName) throws IOException {
         Path targetDir = galleryRoot.resolve(storage).resolve(subDir);
         Files.createDirectories(targetDir);
@@ -250,9 +249,7 @@ public class GalleryService {
         log.debug("Gallery file stored locally: {}", fileName);
     }
 
-    /**
-     * Build gallery file URL based on storage type
-     */
+    // Build gallery file URL based on storage type
     private String buildGalleryUrl(String storage, String subDir, String fileName) {
         if (isS3Storage) {
             // S3 storage: get full S3 URL
@@ -267,9 +264,7 @@ public class GalleryService {
         }
     }
 
-    /**
-     * Get S3 gallery file URL
-     */
+    // Get S3 gallery file URL
     private String getS3GalleryFileUrl(String storage, String subDir, String fileName) {
         try {
             String key = "gallery/" + storage + "/" + subDir + "/" + fileName;
@@ -284,9 +279,7 @@ public class GalleryService {
         }
     }
 
-    /**
-     * Get content type based on file extension
-     */
+    // Get content type based on file extension
     private String getContentType(String fileName) {
         String lower = fileName.toLowerCase();
         if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
@@ -321,9 +314,7 @@ public class GalleryService {
         folderRepo.delete(f);
     }
 
-    /**
-     * Delete gallery folder from S3
-     */
+    // Delete gallery folder from S3
     private void deleteGalleryFolderFromS3(String storageName) {
         // Note: S3 doesn't have folders, but we can delete all objects with the prefix
         // For simplicity, we'll just log that files should be cleaned up manually
@@ -331,9 +322,7 @@ public class GalleryService {
         log.info("Gallery folder {} files should be cleaned up from S3", storageName);
     }
 
-    /**
-     * Delete gallery folder locally
-     */
+    // Delete gallery folder locally
     private void deleteGalleryFolderLocally(String storageName) throws IOException {
         Path folderPath = galleryRoot.resolve(storageName);
         if (Files.exists(folderPath)) {
@@ -385,9 +374,7 @@ public class GalleryService {
         return itemRepo.save(item);
     }
 
-    /**
-     * Delete gallery file (S3 or local)
-     */
+    // Delete gallery file (S3 or local)
     private void deleteGalleryFile(String storageName, String subDir, String fileName) throws IOException {
         if (isS3Storage) {
             String key = "gallery/" + storageName + "/" + subDir + "/" + fileName;
@@ -401,9 +388,7 @@ public class GalleryService {
         }
     }
 
-    /**
-     * Download folder as ZIP
-     */
+    // Download folder as ZIP
     public Path downloadZip(Long folderId) throws IOException {
         GalleryFolder folder = folderRepo.findById(folderId).orElseThrow(() -> new IOException("Folder not found"));
         List<GalleryItem> items = itemRepo.findByFolder(folder);
@@ -431,6 +416,14 @@ public class GalleryService {
         }
 
         return zipFile;
+    }
+
+    // Search folders by name (case-insensitive) - only active folders
+    public List<GalleryFolder> searchFoldersByName(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return folderRepo.findByIsActiveTrue();
+        }
+        return folderRepo.findByDisplayNameContainingIgnoreCaseAndIsActiveTrue(query.trim());
     }
 
     private String stripExt(String n) { int i = n.lastIndexOf('.'); return i==-1?n:n.substring(0,i); }

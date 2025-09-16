@@ -59,6 +59,18 @@ public class GalleryController {
         return ResponseEntity.ok(ApiResponse.success("Danh sách thư mục", galleryService.listAllFolders()));
     }
 
+    // Public list active folders only
+    @GetMapping("/folders/active")
+    public ResponseEntity<?> listActiveFolders() {
+        return ResponseEntity.ok(ApiResponse.success("Danh sách thư mục active", galleryService.listActiveFolders()));
+    }
+
+    // Public search folders by name
+    @GetMapping("/search")
+    public ResponseEntity<?> searchFolders(@RequestParam(value = "q", required = false) String query) {
+        return ResponseEntity.ok(ApiResponse.success("Kết quả tìm kiếm", galleryService.searchFoldersByName(query)));
+    }
+
     // Public list items of folder (trả về tất cả item)
     @GetMapping("/folders/{id}/items")
     public ResponseEntity<?> listItems(@PathVariable Long id) {

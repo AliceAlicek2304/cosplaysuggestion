@@ -25,12 +25,10 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-/**
- * Universal file storage service supporting both local and S3 storage
- * Storage type is determined by app.storage.type property:
- * - "local": stores files locally (development)
- * - "s3": stores files in AWS S3 (production)
- */
+// Universal file storage service supporting both local and S3 storage
+// Storage type is determined by app.storage.type property:
+// - "local": stores files locally (development)
+// - "s3": stores files in AWS S3 (production)
 @Service
 public class FileStorageService {
 
@@ -126,9 +124,7 @@ public class FileStorageService {
         }
     }
 
-    /**
-     * Helper to build avatar URL based on storage type
-     */
+    // Helper to build avatar URL based on storage type
     private String buildAvatarUrl(String fileName) {
         if (isS3Storage) {
             // S3 storage: get full S3 URL
@@ -146,9 +142,7 @@ public class FileStorageService {
         }
     }
 
-    /**
-     * Get S3 file URL
-     */
+    // Get S3 file URL
     private String getS3FileUrl(String key) {
         try {
             GetUrlRequest getUrlRequest = GetUrlRequest.builder()
@@ -162,16 +156,12 @@ public class FileStorageService {
         }
     }
 
-    /**
-     * Get default avatar URL
-     */
+    // Get default avatar URL
     public String getDefaultAvatarUrl() {
         return buildAvatarUrl("default-avatar.jpg");
     }
 
-    /**
-     * Store avatar file for a user
-     */
+    // Store avatar file for a user
     public String storeAvatar(MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
             return getDefaultAvatarUrl();
@@ -189,9 +179,7 @@ public class FileStorageService {
         }
     }
 
-    /**
-     * Store avatar file for a specific user ID
-     */
+    // Store avatar file for a specific user ID
     public String saveAvatarFile(MultipartFile file, Long userId) throws IOException {
         if (file == null || file.isEmpty()) {
             return getDefaultAvatarUrl();
@@ -209,9 +197,7 @@ public class FileStorageService {
         }
     }
 
-    /**
-     * Store avatar to S3
-     */
+    // Store avatar to S3
     private String storeAvatarToS3(MultipartFile file, String fileName) throws IOException {
         try {
             String s3Key = "avatars/" + fileName;
@@ -264,9 +250,7 @@ public class FileStorageService {
         }
     }
 
-    /**
-     * Store avatar locally
-     */
+    // Store avatar locally
     private String storeAvatarLocally(MultipartFile file, String fileName) throws IOException {
         Path targetLocation = avatarStoragePath.resolve(fileName);
         Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
@@ -274,9 +258,7 @@ public class FileStorageService {
         return buildAvatarUrl(fileName);
     }
 
-    /**
-     * Delete file by file path
-     */
+    // Delete file by file path
     public void deleteFile(String filePath) throws IOException {
         if (filePath == null || filePath.isEmpty()) {
             return;
@@ -295,9 +277,7 @@ public class FileStorageService {
         }
     }
 
-    /**
-     * Delete file from S3
-     */
+    // Delete file from S3
     private void deleteFileFromS3(String fileUrl) {
         try {
             String key = extractS3KeyFromUrl(fileUrl);
@@ -315,9 +295,7 @@ public class FileStorageService {
         }
     }
 
-    /**
-     * Delete file locally
-     */
+    // Delete file locally
     private void deleteFileLocally(String filePath, String fileName) throws IOException {
         if (filePath.contains(avatarUrlPattern)) {
             Path targetPath = avatarStoragePath.resolve(fileName);
@@ -328,9 +306,7 @@ public class FileStorageService {
         }
     }
 
-    /**
-     * Extract S3 key from full URL
-     */
+    // Extract S3 key from full URL
     private String extractS3KeyFromUrl(String fileUrl) {
         if (fileUrl == null || fileUrl.isEmpty()) {
             return null;

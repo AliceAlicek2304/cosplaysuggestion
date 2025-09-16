@@ -18,7 +18,7 @@ export interface GalleryItem {
 
 export const galleryService = {
   getAll: async (): Promise<GalleryItem[]> => {
-    const response = await api.get('/gallery/folders');
+    const response = await api.get('/gallery/folders/active');
     return response.data.data;
   },
   getAllFoldersRaw,
@@ -49,6 +49,10 @@ export const galleryService = {
   },
   getFolderItems: async (folderId: number) => {
     const response = await api.get(`/gallery/folders/${folderId}/items`);
+    return response.data.data;
+  },
+  search: async (query: string): Promise<GalleryItem[]> => {
+    const response = await api.get(`/gallery/search?q=${encodeURIComponent(query)}`);
     return response.data.data;
   },
   deleteItem: async (itemId: number) => {

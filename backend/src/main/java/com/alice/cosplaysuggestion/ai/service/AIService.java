@@ -30,16 +30,12 @@ public class AIService {
     @Autowired
     private AIConfig aiConfig;
 
-    /**
-     * Gửi tin nhắn đến model AI và nhận phản hồi
-     */
+    // Gửi tin nhắn đến model AI và nhận phản hồi
     public ApiResponse<ChatResponse> generateResponse(String userMessage) {
         return generateResponse(userMessage, null);
     }
 
-    /**
-     * Gửi tin nhắn đến model AI với system prompt và nhận phản hồi
-     */
+    // Gửi tin nhắn đến model AI với system prompt và nhận phản hồi
     public ApiResponse<ChatResponse> generateResponse(String userMessage, String systemPrompt) {
         try {
             if (userMessage == null || userMessage.trim().isEmpty()) {
@@ -89,9 +85,8 @@ public class AIService {
             return ApiResponse.error("Failed to generate AI response: " + e.getMessage());
         }
     }
-    /**
-     * Xử lý response từ Gemini API
-     */
+
+    // Xử lý response từ Gemini API
     @SuppressWarnings("unchecked")
     private ChatResponse processGeminiResponse(Map<String, Object> response, long startTime) {
         ChatResponse chatResponse = new ChatResponse();

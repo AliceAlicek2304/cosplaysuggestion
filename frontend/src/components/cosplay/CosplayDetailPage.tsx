@@ -44,7 +44,7 @@ const CosplayDetailPage: React.FC<{ folderId: string }> = ({ folderId }) => {
     try {
       setLoading(true);
 
-      // Lấy thông tin folder
+      // Lấy thông tin folder từ active folders
       const folders = await galleryService.getAll();
       const currentFolder = folders.find(f => f.id === parseInt(folderId));
 
@@ -55,9 +55,10 @@ const CosplayDetailPage: React.FC<{ folderId: string }> = ({ folderId }) => {
 
       setFolder(currentFolder);
 
-      // Lấy items của folder
+      // Lấy items của folder và lọc chỉ active
       const folderItems = await galleryService.getFolderItems(currentFolder.id);
-      setItems(folderItems);
+      const activeItems = folderItems.filter((item: GalleryItemDetail) => item.isActive);
+      setItems(activeItems);
 
     } catch (err) {
       setError('Không thể tải chi tiết cosplay');

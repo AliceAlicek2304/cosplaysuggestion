@@ -37,9 +37,7 @@ public class CosplayController {
     @Autowired
     private CosplaySuggestionService cosplaySuggestionService;
 
-    /**
-     * Tạo gợi ý cosplay cho người dùng đã đăng nhập
-     */
+    // Tạo gợi ý cosplay cho người dùng đã đăng nhập
     @PostMapping("/suggestion")
     public ResponseEntity<ApiResponse<CosplaySuggestionResponse>> generateSuggestion(
             @Valid @RequestBody CosplaySuggestionRequest request,
@@ -75,9 +73,7 @@ public class CosplayController {
         }
     }
 
-    /**
-     * Endpoint để test AI connection
-     */
+    // Endpoint để test AI connection
     @PostMapping("/test")
     public ResponseEntity<ApiResponse<String>> testAI(@RequestBody String message) {
         try {
