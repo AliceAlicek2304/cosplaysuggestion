@@ -90,6 +90,13 @@ public class SecurityConfig {
                     // Gallery public GET
                     .requestMatchers(GET, "/api/gallery/**").permitAll()
                     
+                    // Festival public GET endpoints
+                    .requestMatchers(GET, "/api/festivals/active").permitAll()
+                    .requestMatchers(GET, "/api/festivals/upcoming").permitAll()
+                    .requestMatchers(GET, "/api/festivals/search").permitAll()
+                    .requestMatchers(GET, "/api/festivals/date-range").permitAll()
+                    .requestMatchers(GET, "/api/festivals/{id}").permitAll()
+                    
                     // === COSPLAY SUGGESTION ENDPOINTS ===
                     
                     // Cosplay suggestion - can be used by both authenticated and guest users
@@ -111,6 +118,19 @@ public class SecurityConfig {
                     .requestMatchers(POST, "/api/gallery/**").hasRole("ADMIN")
                     .requestMatchers(PUT, "/api/gallery/**").hasRole("ADMIN")
                     .requestMatchers(DELETE, "/api/gallery/**").hasRole("ADMIN")
+                    
+                    // Festival admin endpoints - require ADMIN role
+                    .requestMatchers("/api/festivals/admin/**").hasRole("ADMIN")
+                    
+                    // Notification authenticated endpoints - require authentication
+                    .requestMatchers("/api/notifications/fes/my").authenticated()
+                    .requestMatchers("/api/notifications/fes/my/upcoming").authenticated()
+                    .requestMatchers(POST, "/api/notifications/fes/festival/**").authenticated()
+                    .requestMatchers(PUT, "/api/notifications/fes/**").authenticated()
+                    .requestMatchers(DELETE, "/api/notifications/fes/**").authenticated()
+                    
+                    // Notification admin endpoints - require ADMIN role
+                    .requestMatchers("/api/notifications/fes/admin/**").hasRole("ADMIN")
                     
                     // === DOCUMENTATION & MONITORING ===
                     

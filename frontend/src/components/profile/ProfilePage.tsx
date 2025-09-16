@@ -3,10 +3,12 @@ import { Container, Row, Col, Nav, Card, Form, Button, Alert, Badge, Table, Moda
 import { useAuth } from '../../contexts/AuthContext';
 import { authService } from '../../services/api.service';
 import { galleryService } from '../../services/gallery.service';
+import { festivalService } from '../../services/festival.service';
 import { getAvatarUrl, getBackgroundUrl, getGalleryItemUrl } from '../../utils/helpers';
 import { toast } from '../../utils/toast.utils';
 import styles from './ProfilePage.module.css';
 import { GalleryItem } from '../../types/gallery.types';
+import { Festival, CreateFestivalRequest, UpdateFestivalRequest, NotificationFes } from '../../types/festival.types';
 
 
 interface UpdateProfileData {
@@ -88,7 +90,27 @@ const ProfilePage: React.FC = () => {
   const [addItemFile, setAddItemFile] = useState<File | null>(null);
   const [addItemType, setAddItemType] = useState<'IMAGE' | 'VIDEO'>('IMAGE');
   const [addItemError, setAddItemError] = useState('');
-  // Lấy danh sách item của folder
+
+  // Festival state
+  const [festivals, setFestivals] = useState<Festival[]>([]);
+  const [festivalModal, setFestivalModal] = useState<{ open: boolean; festival: Festival | null; mode: 'create' | 'edit' }>({
+    open: false,
+    festival: null,
+    mode: 'create'
+  });
+  const [festivalForm, setFestivalForm] = useState<CreateFestivalRequest>({
+    name: '',
+    description: '',
+    location: '',
+    link: '',
+    startDate: '',
+    endDate: ''
+  });
+  const [festivalLoading, setFestivalLoading] = useState(false);
+
+  // Notification state
+  const [notifications, setNotifications] = useState<NotificationFes[]>([]);
+  const [notificationLoading, setNotificationLoading] = useState(false);
   const fetchFolderItems = async (folderId: number) => {
     setLoadingItems(true);
     try {
@@ -171,9 +193,16 @@ const ProfilePage: React.FC = () => {
         height: user.height ? user.height.toString() : '',
         weight: user.weight ? user.weight.toString() : ''
       });
+      
+      // Fetch notifications for all authenticated users
+      fetchNotifications();
+      
+      // Luôn lấy tất cả folder (cả active/inactive)
+      if (user?.role === 'ADMIN') {
+        fetchGalleryAll();
+        fetchFestivals();
+      }
     }
-    // Luôn lấy tất cả folder (cả active/inactive)
-    if (user?.role === 'ADMIN') fetchGalleryAll();
   }, [user]);
 
   // Hàm lấy tất cả folder (cả active/inactive)
@@ -438,6 +467,163 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  // Festival functions
+  const fetchFestivals = async () => {
+    setFestivalLoading(true);
+    try {
+      const data = await festivalService.getAllFestivals();
+      setFestivals(data);
+    } catch (error) {
+      const errorMessage = 'Lỗi khi tải danh sách lễ hội';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setFestivalLoading(false);
+    }
+  };
+
+  const handleOpenCreateFestival = () => {
+    setFestivalForm({
+      name: '',
+      description: '',
+      location: '',
+      link: '',
+      startDate: '',
+      endDate: ''
+    });
+    setFestivalModal({ open: true, festival: null, mode: 'create' });
+  };
+
+  const handleOpenEditFestival = (festival: Festival) => {
+    setFestivalForm({
+      name: festival.name,
+      description: festival.description || '',
+      location: festival.location || '',
+      link: festival.link || '',
+      startDate: festival.startDate,
+      endDate: festival.endDate
+    });
+    setFestivalModal({ open: true, festival, mode: 'edit' });
+  };
+
+  const handleCloseFestivalModal = () => {
+    setFestivalModal({ open: false, festival: null, mode: 'create' });
+    setFestivalForm({
+      name: '',
+      description: '',
+      location: '',
+      link: '',
+      startDate: '',
+      endDate: ''
+    });
+  };
+
+  const handleFestivalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFestivalLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      if (festivalModal.mode === 'create') {
+        await festivalService.createFestival(festivalForm);
+        toast.success('Tạo lễ hội thành công!');
+        setSuccess('Tạo lễ hội thành công');
+      } else if (festivalModal.festival) {
+        await festivalService.updateFestival(festivalModal.festival.id, festivalForm);
+        toast.success('Cập nhật lễ hội thành công!');
+        setSuccess('Cập nhật lễ hội thành công');
+      }
+      handleCloseFestivalModal();
+      fetchFestivals();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Lỗi khi lưu lễ hội';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setFestivalLoading(false);
+    }
+  };
+
+  const handleDeleteFestival = async (id: number) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa lễ hội này?')) return;
+
+    setFestivalLoading(true);
+    try {
+      await festivalService.deleteFestival(id);
+      toast.success('Xóa lễ hội thành công!');
+      setSuccess('Xóa lễ hội thành công');
+      fetchFestivals();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Lỗi khi xóa lễ hội';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setFestivalLoading(false);
+    }
+  };
+
+  const handleToggleFestivalStatus = async (id: number) => {
+    setFestivalLoading(true);
+    try {
+      await festivalService.toggleFestivalStatus(id);
+      toast.success('Cập nhật trạng thái lễ hội thành công!');
+      setSuccess('Cập nhật trạng thái lễ hội thành công');
+      fetchFestivals();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Lỗi khi cập nhật trạng thái lễ hội';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setFestivalLoading(false);
+    }
+  };
+
+  // Notification functions
+  const fetchNotifications = async () => {
+    setNotificationLoading(true);
+    try {
+      const data = await festivalService.getMyNotifications();
+      setNotifications(data);
+    } catch (error: any) {
+      const errorMessage = 'Lỗi khi tải danh sách thông báo';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
+  const handleToggleNotificationStatus = async (notificationId: number) => {
+    setNotificationLoading(true);
+    try {
+      await festivalService.toggleNotificationStatus(notificationId);
+      toast.success('Cập nhật trạng thái thông báo thành công!');
+      fetchNotifications();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Lỗi khi cập nhật trạng thái thông báo';
+      toast.error(errorMessage);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId: number) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa thông báo này?')) return;
+
+    setNotificationLoading(true);
+    try {
+      await festivalService.deleteNotification(notificationId);
+      toast.success('Xóa thông báo thành công!');
+      fetchNotifications();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Lỗi khi xóa thông báo';
+      toast.error(errorMessage);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
   // Generate floating particles for profile page
   const generateParticles = () => {
     const particles = [];
@@ -532,6 +718,15 @@ const ProfilePage: React.FC = () => {
                   Bảo mật
                 </Nav.Link>
               </Nav.Item>
+              <Nav.Item>
+                <Nav.Link 
+                  className={`${styles.navLink} ${activeTab === 'notifications' ? styles.active : ''}`}
+                  onClick={() => setActiveTab('notifications')}
+                >
+                  <i className="fas fa-bell me-2"></i>
+                  Thông báo
+                </Nav.Link>
+              </Nav.Item>
               {user?.role === 'ADMIN' && (
                 <Nav.Item>
                   <Nav.Link 
@@ -540,6 +735,17 @@ const ProfilePage: React.FC = () => {
                   >
                     <i className="fas fa-images me-2"></i>
                     Gallery
+                  </Nav.Link>
+                </Nav.Item>
+              )}
+              {user?.role === 'ADMIN' && (
+                <Nav.Item>
+                  <Nav.Link 
+                    className={`${styles.navLink} ${activeTab === 'festival' ? styles.active : ''}`}
+                    onClick={() => setActiveTab('festival')}
+                  >
+                    <i className="fas fa-calendar-alt me-2"></i>
+                    Festival
                   </Nav.Link>
                 </Nav.Item>
               )}
@@ -560,10 +766,20 @@ const ProfilePage: React.FC = () => {
                     <i className="fas fa-shield-alt me-2"></i>
                     Bảo mật tài khoản
                   </>
-                ) : (
+                ) : activeTab === 'notifications' ? (
+                  <>
+                    <i className="fas fa-bell me-2"></i>
+                    Thông báo lễ hội
+                  </>
+                ) : activeTab === 'gallery' ? (
                   <>
                     <i className="fas fa-images me-2"></i>
                     Quản lý Gallery
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-calendar-alt me-2"></i>
+                    Quản lý Festival
                   </>
                 )}
               </h4>
@@ -915,6 +1131,105 @@ const ProfilePage: React.FC = () => {
                 </>
               )}
 
+              {activeTab === 'notifications' && (
+                <>
+                  <div className={styles.notificationsSection}>
+                    <div className={styles.sectionHeader}>
+                      <h5 className={styles.sectionTitle}>
+                        <i className="fas fa-bell me-2"></i>
+                        Thông báo lễ hội của bạn
+                      </h5>
+                      <p className={styles.sectionDescription}>
+                        Quản lý các thông báo cho lễ hội mà bạn đã đăng ký
+                      </p>
+                      <div className="alert alert-info mt-2" role="alert">
+                        <i className="fas fa-info-circle me-2"></i>
+                        <strong>Lưu ý:</strong> Chỉ những tài khoản đã xác thực email mới nhận được thông báo tự động trước 2 ngày khi lễ hội diễn ra.
+                      </div>
+                    </div>
+
+                    {notificationLoading ? (
+                      <div className="text-center py-4">
+                        <div className="spinner-border text-primary" role="status">
+                          <span className="visually-hidden">Đang tải...</span>
+                        </div>
+                        <p className="mt-2">Đang tải danh sách thông báo...</p>
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="text-center py-5">
+                        <i className="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                        <h5 className="text-muted">Chưa có thông báo nào</h5>
+                        <p className="text-muted">Bạn chưa đăng ký thông báo cho lễ hội nào.</p>
+                      </div>
+                    ) : (
+                      <div className={styles.notificationsList}>
+                        {notifications.map((notification) => (
+                          <Card key={notification.id} className={`${styles.notificationCard} mb-3`}>
+                            <Card.Body>
+                              <div className="d-flex justify-content-between align-items-start">
+                                <div className="flex-grow-1">
+                                  <h6 className={styles.festivalName}>
+                                    {notification.festival?.name}
+                                  </h6>
+                                  <div className={styles.festivalInfo}>
+                                    <small className="text-muted">
+                                      <i className="fas fa-calendar me-1"></i>
+                                      {notification.festival?.startDate ? 
+                                        new Date(notification.festival.startDate).toLocaleDateString('vi-VN') : 
+                                        'N/A'}
+                                    </small>
+                                    <small className="text-muted ms-3">
+                                      <i className="fas fa-map-marker-alt me-1"></i>
+                                      {notification.festival?.location || 'N/A'}
+                                    </small>
+                                  </div>
+                                  {notification.note && (
+                                    <div className={styles.notificationNote}>
+                                      <small className="text-muted">
+                                        <i className="fas fa-sticky-note me-1"></i>
+                                        {notification.note}
+                                      </small>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="d-flex align-items-center gap-2">
+                                  <Badge 
+                                    bg={notification.isActive ? 'success' : 'secondary'}
+                                    className={styles.statusBadge}
+                                  >
+                                    {notification.isActive ? 'Đang hoạt động' : 'Tạm dừng'}
+                                  </Badge>
+                                  <div className="btn-group">
+                                    <Button
+                                      variant={notification.isActive ? 'outline-warning' : 'outline-success'}
+                                      size="sm"
+                                      onClick={() => handleToggleNotificationStatus(notification.id)}
+                                      disabled={notificationLoading}
+                                      title={notification.isActive ? 'Tạm dừng thông báo' : 'Bật lại thông báo'}
+                                    >
+                                      <i className={`fas ${notification.isActive ? 'fa-pause' : 'fa-play'}`}></i>
+                                    </Button>
+                                    <Button
+                                      variant="outline-danger"
+                                      size="sm"
+                                      onClick={() => handleDeleteNotification(notification.id)}
+                                      disabled={notificationLoading}
+                                      title="Xóa thông báo"
+                                    >
+                                      <i className="fas fa-trash"></i>
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
               {activeTab === 'gallery' && user?.role === 'ADMIN' && (
                 <>
                   {galleryError && <Alert variant="danger">{galleryError}</Alert>}
@@ -1060,6 +1375,172 @@ const ProfilePage: React.FC = () => {
                       <Modal.Footer>
                         <Button variant="secondary" onClick={() => setShowGalleryModal(false)}>Đóng</Button>
                         <Button type="submit" variant="primary" disabled={galleryUploading}>{galleryUploading ? 'Đang tải lên...' : 'Tải lên'}</Button>
+                      </Modal.Footer>
+                    </Form>
+                  </Modal>
+                </>
+              )}
+
+              {activeTab === 'festival' && user?.role === 'ADMIN' && (
+                <>
+                  <Button variant="primary" onClick={handleOpenCreateFestival} className="mb-3">
+                    <i className="fas fa-plus me-2"></i>
+                    Tạo lễ hội mới
+                  </Button>
+                  <Table striped bordered hover>
+                    <thead>
+                      <tr>
+                        <th>Tên lễ hội</th>
+                        <th>Địa điểm</th>
+                        <th>Thời gian</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {festivals.map(festival => (
+                        <tr key={festival.id}>
+                          <td>
+                            <strong>{festival.name}</strong>
+                            {festival.description && (
+                              <div className="text-muted small mt-1">{festival.description}</div>
+                            )}
+                          </td>
+                          <td>{festival.location || 'Chưa cập nhật'}</td>
+                          <td>
+                            <div>Từ: {new Date(festival.startDate).toLocaleString()}</div>
+                            <div>Đến: {new Date(festival.endDate).toLocaleString()}</div>
+                          </td>
+                          <td>
+                            <Badge bg={festival.isActive ? 'success' : 'secondary'}>
+                              {festival.isActive ? 'ACTIVE' : 'INACTIVE'}
+                            </Badge>
+                          </td>
+                          <td>
+                            <Button
+                              variant="info"
+                              size="sm"
+                              onClick={() => handleOpenEditFestival(festival)}
+                              className="me-2"
+                              disabled={festivalLoading}
+                            >
+                              <i className="fas fa-edit"></i>
+                            </Button>
+                            {festival.isActive ? (
+                              <Button
+                                variant="warning"
+                                size="sm"
+                                onClick={() => handleToggleFestivalStatus(festival.id)}
+                                className="me-2"
+                                disabled={festivalLoading}
+                              >
+                                Inactive
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() => handleToggleFestivalStatus(festival.id)}
+                                className="me-2"
+                                disabled={festivalLoading}
+                              >
+                                Active
+                              </Button>
+                            )}
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDeleteFestival(festival.id)}
+                              disabled={festivalLoading}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+
+                  {/* Festival Modal */}
+                  <Modal show={festivalModal.open} onHide={handleCloseFestivalModal} size="lg">
+                    <Modal.Header closeButton>
+                      <Modal.Title>
+                        {festivalModal.mode === 'create' ? 'Tạo lễ hội mới' : 'Chỉnh sửa lễ hội'}
+                      </Modal.Title>
+                    </Modal.Header>
+                    <Form onSubmit={handleFestivalSubmit}>
+                      <Modal.Body>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Tên lễ hội *</Form.Label>
+                          <Form.Control
+                            type="text"
+                            value={festivalForm.name}
+                            onChange={e => setFestivalForm({...festivalForm, name: e.target.value})}
+                            required
+                          />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                          <Form.Label>Mô tả</Form.Label>
+                          <Form.Control
+                            as="textarea"
+                            rows={3}
+                            value={festivalForm.description}
+                            onChange={e => setFestivalForm({...festivalForm, description: e.target.value})}
+                          />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                          <Form.Label>Địa điểm</Form.Label>
+                          <Form.Control
+                            type="text"
+                            value={festivalForm.location}
+                            onChange={e => setFestivalForm({...festivalForm, location: e.target.value})}
+                          />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                          <Form.Label>Link trang chủ</Form.Label>
+                          <Form.Control
+                            type="url"
+                            value={festivalForm.link}
+                            onChange={e => setFestivalForm({...festivalForm, link: e.target.value})}
+                            placeholder="https://example.com"
+                          />
+                        </Form.Group>
+
+                        <Row>
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>Thời gian bắt đầu *</Form.Label>
+                              <Form.Control
+                                type="datetime-local"
+                                value={festivalForm.startDate}
+                                onChange={e => setFestivalForm({...festivalForm, startDate: e.target.value})}
+                                required
+                              />
+                            </Form.Group>
+                          </Col>
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>Thời gian kết thúc *</Form.Label>
+                              <Form.Control
+                                type="datetime-local"
+                                value={festivalForm.endDate}
+                                onChange={e => setFestivalForm({...festivalForm, endDate: e.target.value})}
+                                required
+                              />
+                            </Form.Group>
+                          </Col>
+                        </Row>
+                      </Modal.Body>
+                      <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCloseFestivalModal} disabled={festivalLoading}>
+                          Đóng
+                        </Button>
+                        <Button type="submit" variant="primary" disabled={festivalLoading}>
+                          {festivalLoading ? 'Đang lưu...' : (festivalModal.mode === 'create' ? 'Tạo' : 'Cập nhật')}
+                        </Button>
                       </Modal.Footer>
                     </Form>
                   </Modal>

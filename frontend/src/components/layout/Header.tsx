@@ -115,6 +115,16 @@ const Header: React.FC = () => {
               >
                 Cosplay
               </Nav.Link>
+              <Nav.Link 
+                href="#festival" 
+                className={styles.navLink}
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.hash = '#festival';
+                }}
+              >
+                Festival
+              </Nav.Link>
             </Nav>
             
             <Nav>

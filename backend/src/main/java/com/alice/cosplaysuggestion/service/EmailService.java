@@ -1,5 +1,7 @@
 package com.alice.cosplaysuggestion.service;
 
+import java.time.LocalDateTime;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -171,6 +173,96 @@ public class EmailService {
         } catch (MessagingException e) {
             logger.error("Failed to send password reset email to: {}", to, e);
             throw new RuntimeException("Failed to send password reset email", e);
+        }
+    }
+    
+    @Async
+    public void sendFestivalReminderEmail(String to, String fullName, String festivalName, String festivalLocation, LocalDateTime startDate, String festivalLink) {
+        logger.info("Sending festival reminder email to: {} for festival: {}", to, festivalName);
+        
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject("🎭 Nhắc nhở: Lễ hội " + festivalName + " sắp diễn ra!");
+            
+            String formattedDate = startDate.toLocalDate().toString();
+            String formattedTime = startDate.toLocalTime().toString().substring(0, 5);
+            
+            String htmlContent = """
+                <html>
+                <head>
+                    <style>
+                        .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }
+                        .header { background: linear-gradient(135deg, #ff6b6b, #feca57); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0; }
+                        .content { padding: 30px; background-color: #f8f9fa; }
+                        .festival-card { background-color: #fff; border: 2px solid #ff6b6b; padding: 20px; margin: 20px 0; border-radius: 8px; }
+                        .festival-name { font-size: 24px; font-weight: bold; color: #ff6b6b; margin-bottom: 10px; }
+                        .festival-info { margin: 10px 0; }
+                        .btn-primary { background-color: #ff6b6b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 10px 0; }
+                        .footer { background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; }
+                        .reminder-note { background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>🎭 Cosplay Suggestion</h1>
+                            <h2>Nhắc nhở Lễ hội</h2>
+                        </div>
+                        <div class="content">
+                            <p>Chào <strong>%s</strong>,</p>
+                            <p>Lễ hội mà bạn đã đăng ký thông báo sắp diễn ra trong <strong>2 ngày</strong> nữa!</p>
+                            
+                            <div class="festival-card">
+                                <div class="festival-name">🎪 %s</div>
+                                <div class="festival-info">
+                                    <p><strong>📅 Ngày:</strong> %s</p>
+                                    <p><strong>⏰ Giờ:</strong> %s</p>
+                                    <p><strong>📍 Địa điểm:</strong> %s</p>
+                                </div>
+                            </div>
+                            
+                            <div class="reminder-note">
+                                <p><strong>💡 Lưu ý:</strong></p>
+                                <ul>
+                                    <li>Hãy chuẩn bị trang phục và phụ kiện của bạn</li>
+                                    <li>Kiểm tra thời tiết và phương tiện di chuyển</li>
+                                    <li>Đừng quên mang theo máy ảnh để lưu giữ khoảnh khắc!</li>
+                                </ul>
+                            </div>
+                            
+                            %s
+                            
+                            <p>Chúc bạn có một ngày tuyệt vời tại lễ hội!</p>
+                        </div>
+                        <div class="footer">
+                            <p>© 2025 Cosplay Suggestion - Nền tảng gợi ý cosplay thông minh</p>
+                            <p>Email này được gửi tự động cho những tài khoản đã xác thực email.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """.formatted(
+                    fullName,
+                    festivalName,
+                    formattedDate,
+                    formattedTime,
+                    festivalLocation != null ? festivalLocation : "Chưa cập nhật",
+                    festivalLink != null ? 
+                        String.format("<p><a href=\"%s\" class=\"btn-primary\">Xem chi tiết lễ hội</a></p>", festivalLink) : 
+                        ""
+                );
+            
+            helper.setText(htmlContent, true);
+            
+            mailSender.send(message);
+            logger.info("Festival reminder email sent successfully to: {} for festival: {}", to, festivalName);
+            
+        } catch (MessagingException e) {
+            logger.error("Failed to send festival reminder email to: {} for festival: {}", to, festivalName, e);
         }
     }
 }

@@ -8,6 +8,7 @@ import HomePage from './components/HomePage';
 import ProfilePage from './components/profile/ProfilePage';
 import CosplayPage from './components/cosplay/CosplayPage';
 import CosplayDetailPage from './components/cosplay/CosplayDetailPage';
+import FestivalPage from './components/festival/FestivalPage';
 import EmailVerifyPage from './components/auth/EmailVerifyPage';
 import './App.css';
 
@@ -35,6 +36,8 @@ function App() {
         return <ProfilePage />;
       case 'cosplay':
         return <CosplayPage />;
+      case 'festival':
+        return <FestivalPage />;
       case 'verify-email':
         return <EmailVerifyPage />;
       default:
