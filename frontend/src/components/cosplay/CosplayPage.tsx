@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Spinner, Alert } from 'react-bootstrap';
 import { galleryService } from '../../services/gallery.service';
+import { initializeBackgroundImages, createBackgroundInterval } from '../../utils/background.utils';
 import { getAvatarUrl, getBackgroundUrl, getGalleryItemUrl } from '../../utils/helpers';
 import { GalleryItem } from '../../types/gallery.types';
 import styles from './CosplayPage.module.css';
@@ -14,16 +15,13 @@ const CosplayPage: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
-    fetchFolders();
-  }, []);
-
-  // Change background every 45 seconds (slower than homepage)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentBg(prev => prev === 5 ? 1 : prev + 1);
-    }, 45000);
-
-    return () => clearInterval(interval);
+    // Initialize available background images
+    initializeBackgroundImages().then(() => {
+      fetchFolders();
+      // Rotate background images using shared utility
+      const cleanup = createBackgroundInterval('cosplay', setCurrentBg);
+      return cleanup;
+    });
   }, []);
 
   const fetchFolders = async (query = '') => {
@@ -34,7 +32,7 @@ const CosplayPage: React.FC = () => {
         response = await galleryService.search(query);
       } else {
         // API đã trả về chỉ folders active
-        response = await galleryService.getAll();
+        response = await galleryService.getAllSorted();
       }
       setFolders(response);
     } catch (err) {
@@ -84,28 +82,64 @@ const CosplayPage: React.FC = () => {
 
   if (loading) {
     return (
-      <Container className="mt-5 text-center">
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Đang tải...</span>
-        </Spinner>
-      </Container>
+      <div className={styles.cosplayPage}>
+        {/* Dynamic Background - always render like FestivalPage */}
+        <div className={styles.backgroundContainer}>
+          <img
+            src={getBackgroundUrl(currentBg)}
+            alt="Background"
+            className={styles.backgroundImage}
+          />
+        </div>
+        <div className={styles.backgroundOverlay} />
+        
+        {/* Floating Particles */}
+        <div className={styles.particles}>
+          {generateParticles()}
+        </div>
+
+        {/* Loading Content */}
+        <Container className="mt-5 text-center">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Đang tải...</span>
+          </Spinner>
+        </Container>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Container className="mt-5">
-        <Alert variant="danger">
-          <i className="fas fa-exclamation-triangle me-2"></i>
-          {error}
-        </Alert>
-      </Container>
+      <div className={styles.cosplayPage}>
+        {/* Dynamic Background - always render like FestivalPage */}
+        <div className={styles.backgroundContainer}>
+          <img
+            src={getBackgroundUrl(currentBg)}
+            alt="Background"
+            className={styles.backgroundImage}
+          />
+        </div>
+        <div className={styles.backgroundOverlay} />
+        
+        {/* Floating Particles */}
+        <div className={styles.particles}>
+          {generateParticles()}
+        </div>
+
+        {/* Error Content */}
+        <Container className="mt-5">
+          <Alert variant="danger">
+            <i className="fas fa-exclamation-triangle me-2"></i>
+            {error}
+          </Alert>
+        </Container>
+      </div>
     );
   }
 
   return (
     <div className={styles.cosplayPage}>
-      {/* Dynamic Background */}
+      {/* Dynamic Background - like FestivalPage */}
       <div className={styles.backgroundContainer}>
         <img
           src={getBackgroundUrl(currentBg)}

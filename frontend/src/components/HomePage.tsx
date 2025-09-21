@@ -4,6 +4,7 @@ import styles from './HomePage.module.css';
 import { AuthContext } from '../contexts/AuthContext';
 import { cosplayService } from '../services/api.service';
 import CosplaySuggestionModal from './cosplay/CosplaySuggestionModal';
+import { initializeBackgroundImages, createBackgroundInterval } from '../utils/background.utils';
 import { getBackgroundUrl } from '../utils/helpers';
 
 interface CosplaySuggestionRequest {
@@ -22,7 +23,6 @@ const HomePage: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [suggestion, setSuggestion] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
-  const backgroundImages = [1, 2, 3, 4]; // Images 1.jpg, 2.jpg, 3.jpg, 4.jpg
 
   const authContext = useContext(AuthContext);
   const user = authContext?.user || null;
@@ -49,13 +49,13 @@ const HomePage: React.FC = () => {
     };
   });
 
-  // Change background every 30 seconds
+  // Change background using shared utility
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentBg(prev => prev === 4 ? 1 : prev + 1);
-    }, 30000);
-
-    return () => clearInterval(interval);
+    // Initialize available background images
+    initializeBackgroundImages().then(() => {
+      const cleanup = createBackgroundInterval('home', setCurrentBg);
+      return cleanup;
+    });
   }, []);
 
   // Update form data when user context changes

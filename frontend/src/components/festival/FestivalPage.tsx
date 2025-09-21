@@ -4,6 +4,7 @@ import { festivalService } from '../../services/festival.service';
 import { Festival, CreateNotificationRequest, NotificationFes } from '../../types/festival.types';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from '../../utils/toast.utils';
+import { initializeBackgroundImages, createBackgroundInterval } from '../../utils/background.utils';
 import { getBackgroundUrl } from '../../utils/helpers';
 import styles from './FestivalPage.module.css';
 
@@ -19,26 +20,23 @@ const FestivalPage: React.FC = () => {
   const [currentBg, setCurrentBg] = useState(1);
   const [userNotifications, setUserNotifications] = useState<NotificationFes[]>([]);
 
-  // Background images for festival page
-  const backgroundImages = [1, 2, 3, 4, 5]; // Images 1.jpg, 2.jpg, 3.jpg, 4.jpg, 5.jpg
-
   useEffect(() => {
-    fetchFestivals();
-    if (user) {
-      fetchUserNotifications();
-    }
-    // Rotate background images
-    const interval = setInterval(() => {
-      setCurrentBg((prev) => (prev % 5) + 1);
-    }, 5000);
-
-    return () => clearInterval(interval);
+    // Initialize available background images
+    initializeBackgroundImages().then(() => {
+      fetchFestivals();
+      if (user) {
+        fetchUserNotifications();
+      }
+      // Rotate background images using shared utility
+      const cleanup = createBackgroundInterval('festival', setCurrentBg);
+      return cleanup;
+    });
   }, [user]);
 
   const fetchFestivals = async () => {
     try {
       setLoading(true);
-      const data = await festivalService.getActiveFestivals();
+      const data = await festivalService.getActiveFestivalsSorted();
       setFestivals(data);
     } catch (error) {
       setError('Không thể tải danh sách lễ hội');

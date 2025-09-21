@@ -85,6 +85,15 @@ class FestivalService {
     const response = await api.get(`/notifications/fes/admin/festival/${festivalId}`);
     return response.data.data;
   }
+
+  async getActiveFestivalsSorted(): Promise<Festival[]> {
+    const response = await api.get('/festivals/active');
+    const data = response.data.data;
+    // Sort by startDate descending (newest first)
+    return data.sort((a: Festival, b: Festival) =>
+      new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+    );
+  }
 }
 
 export const festivalService = new FestivalService();

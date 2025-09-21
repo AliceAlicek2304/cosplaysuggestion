@@ -70,4 +70,12 @@ export const galleryService = {
     });
     return response.data.data;
   },
+  getAllSorted: async (): Promise<GalleryItem[]> => {
+    const response = await api.get('/gallery/folders/active');
+    const data = response.data.data;
+    // Sort by createdAt descending (newest first)
+    return data.sort((a: GalleryItem, b: GalleryItem) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  },
 };
